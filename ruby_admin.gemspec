@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = RubyAdmin::VERSION
   spec.authors       = ["Uwe Stuehler"]
   spec.email         = ["uwe@bsdx.de"]
-  spec.description   = %q{TODO: Write a gem description}
-  spec.summary       = %q{TODO: Write a gem summary}
+  spec.description   = %q{RubyAdmin is a library for system administration.}
+  spec.summary       = %q{system adminstration library}
   spec.homepage      = ""
   spec.license       = "MIT"
 
