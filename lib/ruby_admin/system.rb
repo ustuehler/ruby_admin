@@ -26,10 +26,17 @@ module RubyAdmin
         super(resource)
       end
 
+      def default_username
+        require 'etc'
+
+        Etc.getlogin
+      end
+
       def ssh
         options = {}
+        username = @resource.username || default_username
         options[:password] = @resource.password if @resource.password
-        Net::SSH.start @resource.hostname, @resource.username, options
+        Net::SSH.start @resource.hostname, username, options
       end
 
       def sh(command)
