@@ -6,6 +6,15 @@ module RubyAdmin
   # services to web APIs.  If access to a resource can be implemented in
   # multiple ways, provided by different Ruby gems, for example, the
   # +Resource::Providable+ module can be mixed in.
+  #
+  # Named resource instances can be created using the Resource.create
+  # method and retrieved later using the Resource.find method.  The []
+  # class method can be used to retrieve a named resource, ensuring that
+  # the resource exists and is of the correct class.
+  #
+  # Temporary (ad-hoc) resources may be created with the Resource.new
+  # method, or using pattern matching on names.  Name patterns can be
+  # defined with the Resource.match method.
   class Resource
     autoload :Providable, "ruby_admin/resource/providable"
     autoload :Provider,   "ruby_admin/resource/provider"
@@ -34,7 +43,7 @@ module RubyAdmin
     # Create a new named resource instance in the current scope.
     def self.create(name, attributes = {}, &block)
       resource = self.new(name, attributes, &block)
-      scope.add_resource(name, resource)
+      scope.add_resource name, resource
       resource
     end
 
@@ -61,7 +70,19 @@ module RubyAdmin
     # Find a named resource of type `self` (or a subtype) in the current
     # scope.
     def self.find(name)
-      scope.find(self, name)
+      validate_name! name
+      scope.find self, name
+    end
+
+    # Raise an exception if the given +name+ is invalid for this resource
+    # class.  The return value is always +nil+.
+    def self.validate_name!(name)
+      case name
+      when nil
+        raise "#{name.inspect} is not a valid resource name for #{self}"
+      else
+        nil
+      end
     end
 
     # Like +Resource.find+ but will raise an error if the named resource
@@ -77,6 +98,8 @@ module RubyAdmin
     attr_reader :name
 
     def initialize(name, attributes = {})
+      self.class.validate_name! name
+
       @name = name
 
       attributes.each do |attribute, value|
