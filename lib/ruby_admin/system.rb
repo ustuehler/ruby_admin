@@ -9,6 +9,7 @@ module RubyAdmin
       super(name, attributes)
     end
 
+    # Execute a system command on the designated system.
     def sh(command)
       provider.sh command
     end
