@@ -46,6 +46,8 @@ class RubyAdmin::Scope
   # Add a named resource to the scope.  It is an error if a resource of
   # the same name already exists in this scope.
   def add_resource(name, resource)
+    name = name.to_s
+
     if @resources.has_key? name
       raise RuntimeError, "duplicate resource name #{name.inspect} in scope #{self.qualified_name.inspect}"
     end
@@ -65,6 +67,16 @@ class RubyAdmin::Scope
   # Find a named resource of the given type (whose class is `klass` or a
   # subclass) in this scope.
   def find(klass, name)
+    name = name.to_s
+
+    if @resources.has_key? name
+      if (r = @resources[name]).kind_of? klass
+        return r
+      else
+        raise "resource named #{name.inspect} is a #{r.class}, expected #{klass}"
+      end
+    end
+
     return nil unless @patterns.has_key? klass
 
     @patterns[klass].keys.sort.reverse.each do |priority|
