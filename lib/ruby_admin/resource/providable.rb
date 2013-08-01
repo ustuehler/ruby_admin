@@ -4,9 +4,9 @@ module RubyAdmin
   # of +Resource+ to add the resource/provider-split behavioural pattern.
   #
   # Including this module will add the following to a resource class:
+  # - Providable.provide class method
   # - :provider attribute
-  # - `provide' class method
-  # - #provider instance method
+  # - #provider method
   module Resource::Providable
 
     # Class methods for subclasses of +Resource+ that include the
