@@ -1,6 +1,8 @@
 
 module RubyAdmin
   class System < Resource
+    include Resource::Providable
+
     attr_accessor :hostname, :username, :password
 
     def initialize(name, attributes = {})

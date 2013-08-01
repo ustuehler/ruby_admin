@@ -1,6 +1,8 @@
 
 module RubyAdmin
   class Service < Resource
+    include Resource::Proviable
+
     attr_accessor :system, :service_name
 
     def status
