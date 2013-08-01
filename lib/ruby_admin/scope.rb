@@ -6,15 +6,40 @@ class RubyAdmin::Scope
 
   NAMESPACE_SEPARATOR = '::'
 
+  # Return the global scope singleton.
+  def self.global_scope
+    @@global_scope ||= self.new
+  end
+
+  # Return the current scope stack.
+  def self.scope_stack
+    # Always create the global scope implicitly.
+    @scope_stack ||= [global_scope]
+    @scope_stack.clone
+  end
+
+  # Return the top of the scope stack.
   def self.current_scope
-    @scope_stack ||= [self.new]
-    @scope_stack.last
+    scope_stack.last
+  end
+
+  # Call the given block with `scope' pushed temporarily onto the
+  # scope stack.
+  def self.scope_eval(scope, &block)
+    original_stack = @scope_stack
+    begin
+      @scope_stack = scope_stack
+      @scope_stack.push scope
+      block.call
+    ensure
+      @scope_stack = original_stack
+    end
   end
 
   # Initialize a new scope.  Unless the :parent attribute is specified,
   # the new scope will have no parent scope and is therefore a top-level
   # scope.
-  def initialize(attributes = {})
+  def initialize(attributes = {}, &block)
     @defaults = {}
     @resources = {}
     @named_scopes = {}
@@ -30,7 +55,7 @@ class RubyAdmin::Scope
       end
     end
 
-    yield self if block_given?
+    self.class.scope_eval(self) { block.call(self) } if block_given?
   end
 
   # Add a named scope.  It is an error if a scope of the same name
