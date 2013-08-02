@@ -38,9 +38,9 @@ module RubyAdmin
           resource_class = self
           provider_class = Class.new(parent_class) do
             [:inspect, :to_s, :to_str, :name].each do |m|
-            define_singleton_method(m) do
-              "#<#{resource_class} provider #{name.inspect}>"
-            end
+              define_singleton_method(m) do
+                "#<#{resource_class} provider #{name.inspect}>"
+              end
             end
           end
 
