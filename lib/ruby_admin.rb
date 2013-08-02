@@ -1,4 +1,5 @@
 require "ruby_admin/version"
+require "ruby_admin/support/ruby18_compat"
 
 # +RubyAdmin+ is a library for interacting, programmatically, with the
 # resources that surround a system administrator.
