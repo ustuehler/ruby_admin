@@ -20,7 +20,7 @@ describe RubyAdmin::Scope do
 
   context "with parent scope" do
     subject do
-      RubyAdmin::Scope.new :parent => RubyAdmin::Scope.current_scope
+      RubyAdmin::Scope.new
     end
 
     it "should reach the global scope" do
