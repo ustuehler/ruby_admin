@@ -41,10 +41,6 @@ class RubyAdmin::Scope
     @resources = {}
     @patterns = {}
 
-    unless attributes.has_key? :parent
-      self.parent = self.class.current_scope
-    end
-
     attributes.each do |name, value|
       method = "#{name}="
 

@@ -20,7 +20,8 @@ RSpec.configure do |config|
   config.around(:each) do |example|
     # Use a new temporary scope for each example run to avoid
     # polluting the environment outside of this example group.
-    RubyAdmin::Scope.scope_eval(RubyAdmin::Scope.new) do
+    scope = RubyAdmin::Scope.new :parent => RubyAdmin::Scope.current_scope
+    RubyAdmin::Scope.scope_eval(scope) do
       example.run
     end
   end
