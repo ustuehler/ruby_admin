@@ -1,7 +1,7 @@
 
 module RubyAdmin
   class Service < Resource
-    include Resource::Proviable
+    include Resource::Providable
 
     attr_accessor :system, :service_name
 

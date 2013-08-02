@@ -1,21 +1,19 @@
 
-# +Scope+ has an optional parent scope and can store and retrieve other
-# resource parameter defaults, resources and such.
+# +Scope+ can store and retrieve named resources, resource name
+# patterns and such.
 class RubyAdmin::Scope
-  attr_accessor :parent, :namespace, :source, :resource
-
-  NAMESPACE_SEPARATOR = '::'
+  attr_accessor :parent
 
   # Return the global scope singleton.
   def self.global_scope
-    @@global_scope ||= self.new
+    @@global_scope ||= self.new :parent => nil
   end
 
   # Return the current scope stack.
   def self.scope_stack
     # Always create the global scope implicitly.
-    @scope_stack ||= [global_scope]
-    @scope_stack.clone
+    @@scope_stack ||= [global_scope]
+    @@scope_stack.clone
   end
 
   # Return the top of the scope stack.
@@ -26,24 +24,26 @@ class RubyAdmin::Scope
   # Call the given block with `scope' pushed temporarily onto the
   # scope stack.
   def self.scope_eval(scope, &block)
-    original_stack = @scope_stack
+    new_stack = scope_stack
+    original_stack = @@scope_stack
     begin
-      @scope_stack = scope_stack
-      @scope_stack.push scope
+      new_stack.push scope
+      @@scope_stack = new_stack
+
       block.call
     ensure
-      @scope_stack = original_stack
+      @@scope_stack = original_stack
     end
   end
 
-  # Initialize a new scope.  Unless the :parent attribute is specified,
-  # the new scope will have no parent scope and is therefore a top-level
-  # scope.
+  # Initialize a new scope.
   def initialize(attributes = {}, &block)
-    @defaults = {}
     @resources = {}
-    @named_scopes = {}
     @patterns = {}
+
+    unless attributes.has_key? :parent
+      self.parent = self.class.current_scope
+    end
 
     attributes.each do |name, value|
       method = "#{name}="
@@ -55,7 +55,7 @@ class RubyAdmin::Scope
       end
     end
 
-    self.class.scope_eval(self) { block.call(self) } if block_given?
+    self.class.scope_eval(self) { block.call(self) } if block
   end
 
   # Add a named scope.  It is an error if a scope of the same name
@@ -68,16 +68,25 @@ class RubyAdmin::Scope
     @named_scopes[name] = scope
   end
 
+  # Return the list of all named resource instances in this scope.
+  def resources
+    @resources.map { |resource_class, named_resources|
+      named_resources.values
+    }.flatten
+  end
+
   # Add a named resource to the scope.  It is an error if a resource of
   # the same name already exists in this scope.
   def add_resource(name, resource)
     name = name.to_s
 
-    if @resources.has_key? name
-      raise RuntimeError, "duplicate resource name #{name.inspect} in scope #{self.qualified_name.inspect}"
+    @resources[resource.class] ||= {}
+
+    if @resources[resource.class].has_key? name
+      raise RuntimeError, "duplicate #{resource.class} resource #{name.inspect} in scope #{self}"
     end
 
-    @resources[name] = resource
+    @resources[resource.class][name] = resource
   end
 
   # Add a pattern associated with the given class to match against unknown
@@ -89,35 +98,39 @@ class RubyAdmin::Scope
     @patterns[klass][priority] << [pattern, block]
   end
 
-  # Find a named resource of the given type (whose class is `klass` or a
-  # subclass) in this scope.
-  def find(klass, name)
+  # Find a named resource of the given type (whose class is
+  # `resource_class` or a subclass) in this scope.
+  def find(resource_class, name)
     name = name.to_s
 
-    if @resources.has_key? name
-      if (r = @resources[name]).kind_of? klass
-        return r
-      else
-        raise "resource named #{name.inspect} is a #{r.class}, expected #{klass}"
+    resource_class.ancestors.each do |c|
+      next unless c.ancestors.include? RubyAdmin::Resource
+
+      if @resources.has_key?(c) and @resources[c].has_key?(name)
+        return @resources[c][name]
       end
-    end
 
-    return nil unless @patterns.has_key? klass
+      next unless @patterns.has_key? c
 
-    @patterns[klass].keys.sort.reverse.each do |priority|
-      @patterns[klass][priority].each do |pattern, block|
-        next unless m = pattern.match(name)
+      @patterns[c].keys.sort.reverse.each do |priority|
+        @patterns[c][priority].each do |pattern, block|
+          next unless m = pattern.match(name)
 
-        resource = klass.send :instance_exec, name, *m.captures, &block
+          resource = c.send :instance_exec, name, *m.captures, &block
 
-        unless resource.is_a? klass
-          raise RuntimeError, "resource returned by block for pattern #{pattern} is not a #{klass}: #{resource.inspect}"
+          unless resource.is_a? c
+            raise RuntimeError, "resource returned by block for pattern #{pattern} is not a #{c}: #{resource.inspect}"
+          end
+
+          return resource
         end
-
-        return resource
       end
     end
 
-    return nil
+    if parent
+      return parent.find resource_class, name
+    else
+      return nil
+    end
   end
 end

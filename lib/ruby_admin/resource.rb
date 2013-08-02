@@ -23,6 +23,14 @@ module RubyAdmin
     # Resource class methods
     #
 
+    class << self
+      include Enumerable
+    end
+
+    def self.each(&block)
+      scope.resources.each(&block)
+    end
+
     # Return the current scope for resource names, resource name patterns,
     # and so on.
     def self.scope

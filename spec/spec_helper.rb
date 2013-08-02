@@ -16,4 +16,12 @@ RSpec.configure do |config|
   # the seed, which is printed after each run.
   #     --seed 1234
   config.order = 'random'
+
+  config.around(:each) do |example|
+    # Use a new temporary scope for each example run to avoid
+    # polluting the environment outside of this example group.
+    RubyAdmin::Scope.scope_eval(RubyAdmin::Scope.new) do
+      example.run
+    end
+  end
 end
